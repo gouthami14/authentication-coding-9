@@ -1,29 +1,29 @@
 const express = require("express");
+const { open } = require("sqlite");
+const sqlite3 = require("sqlite3");
 const path = require("path");
-const {open} = require("sqlite");
-const sqlite3 = require(sqlite3);
 const bcrypt = require("bcrypt");
 
-const dbPath = path.join(__dirname,"userData.db");
+const databasePath = path.join(__dirname,"userData.db");
 
 const app = express();
 
 app.use(express.json());
 
-let db = null;
+let database = null;
 
 const initializeDBAndServer = async () => { 
     try{
         database = await open({
-            fileName:databasePath,
+            filename:databasePath,
             driver:sqlite3.Database,
         });
 
         app.listen(3000, () => 
             console.log("Server Running at http://localhost:3000/")
         );
-    }catch(e){
-        console.log(`DB Error: ${e.message}`);
+    }catch(error){
+        console.log(`DB Error: ${error.message}`);
         process.exit(1);
     }
 };
@@ -67,7 +67,7 @@ app.post("/register", async (request, response) => {
 });
 
 app.post("/login", async (request, response) => {
-    const {username, password} = request.body;
+    const { username, password } = request.body;
     const selectUserQuery = `SELECT * FROM user WHERE username = '${username}';`;
     const databaseUser = await database.get(selectUserQuery);
 
@@ -89,7 +89,7 @@ app.post("/login", async (request, response) => {
 });
 
 app.put("/change-password", async (request, response) => {
-    const {username, oldPassword, newPassword} = request.body;
+    const { username, oldPassword, newPassword } = request.body;
     const selectUserQuery = `SELECT * FROM user WHERE username = '${username}';`;
     const databaseUser = await database.get(selectUserQuery);
 
@@ -112,13 +112,19 @@ app.put("/change-password", async (request, response) => {
                  password = '${hashedPassword}'
                 WHERE 
                  username = '${username}';`;
+
                 const user = await database.run(updatePasswordQuery);
+
                 response.send("Password Updated");
             }else{
                 response.status(400);
                 response.send("Password is too short");
             }
+        } else {
+            response.status(400);
+            response.send("Invalid current password");
         }
+    }
     });
 
     module.exports = app;
